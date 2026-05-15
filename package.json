@@ -4,7 +4,7 @@
   "description": "Modular Discord bot with music playback",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/images dist/",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "register": "tsx src/register-commands.ts",
