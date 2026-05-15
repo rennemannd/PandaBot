@@ -1,7 +1,7 @@
 import "dotenv/config";
 import ffmpegPath from "ffmpeg-static";
 import { Client, GatewayIntentBits } from "discord.js";
-import { DisTube } from "distube";
+import { DisTube, Events } from "distube";
 import { YtDlpPlugin } from "@distube/yt-dlp";
 import { loadCommands } from "./utils/load-commands";
 
@@ -86,31 +86,33 @@ client.on("interactionCreate", async (interaction) => {
 // ── DisTube events ────────────────────────────────────────────
 // @discordjs/voice's AudioPlayer stops after 5 missed frames (100ms with no data).
 // Network jitter or ffmpeg startup latency can easily exceed that. Raise the limit.
-distube.on("initQueue", (queue) => {
-  queue.voice.audioPlayer.behaviors.maxMissedFrames = 250;
+distube.on(Events.INIT_QUEUE, (queue) => {
+  // behaviors is marked private in @discordjs/voice but mutable at runtime
+  (queue.voice.audioPlayer as unknown as { behaviors: { maxMissedFrames: number } })
+    .behaviors.maxMissedFrames = 250;
 });
 
-distube.on("playSong", (queue, song) => {
+distube.on(Events.PLAY_SONG, (queue, song) => {
   clearIdleDisconnect(queue.id);
   const duration = song.isLive ? "LIVE" : song.formattedDuration;
   queue.textChannel?.send(`🎵 Now playing: **${song.name}** — \`${duration}\``);
 });
 
-distube.on("addSong", (queue, song) => {
+distube.on(Events.ADD_SONG, (queue, song) => {
   const duration = song.isLive ? "LIVE" : song.formattedDuration;
   queue.textChannel?.send(`✅ Added to queue: **${song.name}** — \`${duration}\``);
 });
 
-distube.on("finish", (queue) => {
+distube.on(Events.FINISH, (queue) => {
   queue.textChannel?.send("🏁 Queue finished — no more songs to play.");
   scheduleIdleDisconnect(queue.id);
 });
 
-distube.on("disconnect", (queue) => {
+distube.on(Events.DISCONNECT, (queue) => {
   clearIdleDisconnect(queue.id);
 });
 
-distube.on("error", (error, queue, song) => {
+distube.on(Events.ERROR, (error, _queue, song) => {
   console.error(`DisTube error${song ? ` (${song.name})` : ""}:`, error);
 });
 

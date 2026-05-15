@@ -37,13 +37,14 @@ const command: BotCommand = {
         skipDownload: true,
         simulate: true,
       });
-      const url = result.entries?.[0]?.webpage_url ?? result.webpage_url;
+      const url = "entries" in result ? result.entries[0]?.webpage_url : result.webpage_url;
       if (!url) throw new Error(`No results found for "${query}"`);
       query = url;
     }
 
+    const channel = interaction.channel;
     await distube.play(voiceChannel, query, {
-      textChannel: interaction.channel ?? undefined,
+      textChannel: channel && !channel.isDMBased() ? channel : undefined,
       member,
     });
   },
