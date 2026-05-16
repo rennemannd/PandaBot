@@ -8,17 +8,20 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DROPLET_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DROPLET_HOST }} >> ~/.ssh/known_hosts
+
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: root
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          debug: true
-          script: |
-            cd /home/pandabot/pandabot
-            git pull origin main
-            npm install
-            npm run build
-            npm run register
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@${{ secrets.DROPLET_HOST }} '
+            cd /home/pandabot/pandabot &&
+            git pull origin main &&
+            npm install &&
+            npm run build &&
+            npm run register &&
             sudo -u pandabot pm2 restart pandabot
+          '
